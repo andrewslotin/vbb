@@ -75,6 +75,22 @@ func (c *Client) Locations(query string, locType LocationType, resultsNum int) (
 	return res, nil
 }
 
+// TransportationType represents the type transport type
+type TransportationType uint8
+
+const (
+	SuburbanTrain TransportationType = 1<<iota + 1
+	Subway
+	Tram
+	Bus
+	Ferry
+	ExpressTrain
+	RegionalTrain
+
+	UrbanTransport = SuburbanTrain | Subway | Tram | Bus | Ferry | RegionalTrain
+	AllTransport   = UrbanTransport | ExpressTrain
+)
+
 // Line represents a public transportation line
 type Line struct {
 	Name    string
@@ -93,11 +109,19 @@ type Departure struct {
 }
 
 // Departures returns a list of departures for the stop at given time
-func (c *Client) Departures(stopID string, when time.Time, duration time.Duration) ([]Departure, error) {
+func (c *Client) Departures(stopID string, when time.Time, duration time.Duration, transportTypes TransportationType) ([]Departure, error) {
 	q := make(url.Values)
 	q.Set("when", when.Format(time.RFC3339))
 	q.Set("duration", strconv.FormatFloat(duration.Minutes(), 'f', 0, 64))
 	q.Set("pretty", "false")
+
+	q.Set("suburban", strconv.FormatBool(transportTypes&SuburbanTrain != 0))
+	q.Set("subway", strconv.FormatBool(transportTypes&Subway != 0))
+	q.Set("tram", strconv.FormatBool(transportTypes&Tram != 0))
+	q.Set("bus", strconv.FormatBool(transportTypes&Bus != 0))
+	q.Set("ferry", strconv.FormatBool(transportTypes&Ferry != 0))
+	q.Set("express", strconv.FormatBool(transportTypes&ExpressTrain != 0))
+	q.Set("regional", strconv.FormatBool(transportTypes&RegionalTrain != 0))
 
 	data, err := c.sendRequest(http.MethodGet, "/stops/"+stopID+"/departures")
 	if err != nil {
@@ -115,11 +139,19 @@ func (c *Client) Departures(stopID string, when time.Time, duration time.Duratio
 }
 
 // Arrivals returns a list of arrivals for the stop at given time
-func (c *Client) Arrivals(stopID string, when time.Time, duration time.Duration) ([]Departure, error) {
+func (c *Client) Arrivals(stopID string, when time.Time, duration time.Duration, transportTypes TransportationType) ([]Departure, error) {
 	q := make(url.Values)
 	q.Set("when", when.Format(time.RFC3339))
 	q.Set("duration", strconv.FormatFloat(duration.Minutes(), 'f', 0, 64))
 	q.Set("pretty", "false")
+
+	q.Set("suburban", strconv.FormatBool(transportTypes&SuburbanTrain != 0))
+	q.Set("subway", strconv.FormatBool(transportTypes&Subway != 0))
+	q.Set("tram", strconv.FormatBool(transportTypes&Tram != 0))
+	q.Set("bus", strconv.FormatBool(transportTypes&Bus != 0))
+	q.Set("ferry", strconv.FormatBool(transportTypes&Ferry != 0))
+	q.Set("express", strconv.FormatBool(transportTypes&ExpressTrain != 0))
+	q.Set("regional", strconv.FormatBool(transportTypes&RegionalTrain != 0))
 
 	data, err := c.sendRequest(http.MethodGet, "/stops/"+stopID+"/arrivals")
 	if err != nil {
