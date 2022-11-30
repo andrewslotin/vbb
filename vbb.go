@@ -114,6 +114,28 @@ func (c *Client) Departures(stopID string, when time.Time, duration time.Duratio
 	return res, nil
 }
 
+// Arrivals returns a list of arrivals for the stop at given time
+func (c *Client) Arrivals(stopID string, when time.Time, duration time.Duration) ([]Departure, error) {
+	q := make(url.Values)
+	q.Set("when", when.Format(time.RFC3339))
+	q.Set("duration", strconv.FormatFloat(duration.Minutes(), 'f', 0, 64))
+	q.Set("pretty", "false")
+
+	data, err := c.sendRequest(http.MethodGet, "/stops/"+stopID+"/arrivals")
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve arrivals for %s: %w", stopID, err)
+	}
+
+	defer data.Close()
+
+	var res []Departure
+	if err := json.NewDecoder(data).Decode(&res); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return res, nil
+}
+
 func (c *Client) sendRequest(method, url string) (io.ReadCloser, error) {
 	req, err := http.NewRequest(method, c.endpoint+url, nil)
 	if err != nil {
