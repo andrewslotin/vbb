@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 )
 
 const BaseURL = "https://v5.vbb.transport.rest"
@@ -45,6 +46,7 @@ const (
 	LocationTypeStop    LocationType = 1 << iota
 	LocationTypeAddress
 	LocationTypePOI
+	LocationTypeAny = LocationTypeStop | LocationTypeAddress | LocationTypePOI
 )
 
 // Locations returns first resultsNum locations matching the query
@@ -66,6 +68,45 @@ func (c *Client) Locations(query string, locType LocationType, resultsNum int) (
 	defer data.Close()
 
 	var res []Location
+	if err := json.NewDecoder(data).Decode(&res); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return res, nil
+}
+
+// Line represents a public transportation line
+type Line struct {
+	Name    string
+	Product string
+}
+
+// Departure represents departure information
+type Departure struct {
+	Direction       string
+	When            time.Time
+	PlannedWhen     time.Time
+	Delay           int
+	Platform        int
+	PlannedPlatform int
+	Line            Line
+}
+
+// Departures returns a list of departures for the stop at given time
+func (c *Client) Departures(stopID string, when time.Time, duration time.Duration) ([]Departure, error) {
+	q := make(url.Values)
+	q.Set("when", when.Format(time.RFC3339))
+	q.Set("duration", strconv.FormatFloat(duration.Minutes(), 'f', 0, 64))
+	q.Set("pretty", "false")
+
+	data, err := c.sendRequest(http.MethodGet, "/stops/"+stopID+"/departures")
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve departures for %s: %w", stopID, err)
+	}
+
+	defer data.Close()
+
+	var res []Departure
 	if err := json.NewDecoder(data).Decode(&res); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
