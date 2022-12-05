@@ -75,6 +75,29 @@ func (c *Client) Locations(query string, locType LocationType, resultsNum int) (
 	return res, nil
 }
 
+// StopsNearby returns resultsNum stops within distance meters of walking from given location
+func (c *Client) StopsNearby(lat, lng float64, distance, resultsNum int) ([]Location, error) {
+	q := make(url.Values)
+	q.Set("results", strconv.Itoa(resultsNum))
+	q.Set("latitude", strconv.FormatFloat(lat, 'f', -1, 64))
+	q.Set("longitude", strconv.FormatFloat(lng, 'f', -1, 64))
+	q.Set("pretty", "false")
+
+	data, err := c.sendRequest(http.MethodGet, "/stops/nearby?"+q.Encode())
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve stops nearby: %w", err)
+	}
+
+	defer data.Close()
+
+	var res []Location
+	if err := json.NewDecoder(data).Decode(&res); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return res, nil
+}
+
 // TransportationType represents the type transport type
 type TransportationType uint8
 
