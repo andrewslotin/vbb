@@ -126,8 +126,8 @@ type Departure struct {
 	When            time.Time
 	PlannedWhen     time.Time
 	Delay           int
-	Platform        int
-	PlannedPlatform int
+	Platform        string
+	PlannedPlatform string
 	Line            Line
 }
 
