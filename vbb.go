@@ -134,18 +134,11 @@ type Departure struct {
 
 // Departures returns a list of departures for the stop at given time
 func (c *Client) Departures(stopID string, when time.Time, duration time.Duration, transportTypes TransportationType) ([]Departure, error) {
-	q := make(url.Values)
+	q := addTransportTypeParams(make(url.Values), transportTypes)
+
 	q.Set("when", when.Format(time.RFC3339))
 	q.Set("duration", strconv.FormatFloat(duration.Minutes(), 'f', 0, 64))
 	q.Set("pretty", "false")
-
-	q.Set("suburban", strconv.FormatBool(transportTypes&SuburbanTrain != 0))
-	q.Set("subway", strconv.FormatBool(transportTypes&Subway != 0))
-	q.Set("tram", strconv.FormatBool(transportTypes&Tram != 0))
-	q.Set("bus", strconv.FormatBool(transportTypes&Bus != 0))
-	q.Set("ferry", strconv.FormatBool(transportTypes&Ferry != 0))
-	q.Set("express", strconv.FormatBool(transportTypes&ExpressTrain != 0))
-	q.Set("regional", strconv.FormatBool(transportTypes&RegionalTrain != 0))
 
 	data, err := c.sendRequest(http.MethodGet, "/stops/"+stopID+"/departures")
 	if err != nil {
@@ -164,18 +157,11 @@ func (c *Client) Departures(stopID string, when time.Time, duration time.Duratio
 
 // Arrivals returns a list of arrivals for the stop at given time
 func (c *Client) Arrivals(stopID string, when time.Time, duration time.Duration, transportTypes TransportationType) ([]Departure, error) {
-	q := make(url.Values)
+	q := addTransportTypeParams(make(url.Values), transportTypes)
+
 	q.Set("when", when.Format(time.RFC3339))
 	q.Set("duration", strconv.FormatFloat(duration.Minutes(), 'f', 0, 64))
 	q.Set("pretty", "false")
-
-	q.Set("suburban", strconv.FormatBool(transportTypes&SuburbanTrain != 0))
-	q.Set("subway", strconv.FormatBool(transportTypes&Subway != 0))
-	q.Set("tram", strconv.FormatBool(transportTypes&Tram != 0))
-	q.Set("bus", strconv.FormatBool(transportTypes&Bus != 0))
-	q.Set("ferry", strconv.FormatBool(transportTypes&Ferry != 0))
-	q.Set("express", strconv.FormatBool(transportTypes&ExpressTrain != 0))
-	q.Set("regional", strconv.FormatBool(transportTypes&RegionalTrain != 0))
 
 	data, err := c.sendRequest(http.MethodGet, "/stops/"+stopID+"/arrivals")
 	if err != nil {
@@ -190,6 +176,18 @@ func (c *Client) Arrivals(stopID string, when time.Time, duration time.Duration,
 	}
 
 	return res, nil
+}
+
+func addTransportTypeParams(q url.Values, transportTypes TransportationType) url.Values {
+	q.Set("suburban", strconv.FormatBool(transportTypes&SuburbanTrain != 0))
+	q.Set("subway", strconv.FormatBool(transportTypes&Subway != 0))
+	q.Set("tram", strconv.FormatBool(transportTypes&Tram != 0))
+	q.Set("bus", strconv.FormatBool(transportTypes&Bus != 0))
+	q.Set("ferry", strconv.FormatBool(transportTypes&Ferry != 0))
+	q.Set("express", strconv.FormatBool(transportTypes&ExpressTrain != 0))
+	q.Set("regional", strconv.FormatBool(transportTypes&RegionalTrain != 0))
+
+	return q
 }
 
 func (c *Client) sendRequest(method, url string) (io.ReadCloser, error) {
