@@ -32,11 +32,12 @@ func New(endpoint string, c *http.Client) *Client {
 
 // Location is a station, stop, POI or an address
 type Location struct {
-	Type     string
-	ID       string
-	Name     string
-	Address  string
-	Distance int
+	Type                string
+	ID                  string
+	Name                string
+	Address             string
+	Latitude, Longitude float64
+	Distance            int
 }
 
 // LocationType represents location type
