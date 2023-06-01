@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const BaseURL = "https://v5.vbb.transport.rest"
+const BaseURL = "https://v6.vbb.transport.rest"
 
 // Client is a VBB API client
 type Client struct {
@@ -40,6 +40,68 @@ type Location struct {
 	Distance            int
 }
 
+type hafasLocation struct {
+	Type     string
+	ID       string
+	Name     string
+	Address  string `json:",omitempty"`
+	Location *struct {
+		Type                string
+		Latitude, Longitude float64
+	} `json:",omitempty"`
+	Latitude, Longitude float64 `json:",omitempty"`
+	POI                 bool    `json:",omitempty"`
+}
+
+// MarshalJSON marshals Location into HAFAS@v6 JSON representation
+func (loc Location) MarshalJSON() ([]byte, error) {
+	hLoc := hafasLocation{
+		Type:    loc.Type,
+		ID:      loc.ID,
+		Name:    loc.Name,
+		Address: loc.Address,
+		POI:     loc.Type == "poi",
+	}
+
+	if loc.Type == "stop" {
+		hLoc.Location = &struct {
+			Type                string
+			Latitude, Longitude float64
+		}{
+			Type:      "location",
+			Latitude:  loc.Latitude,
+			Longitude: loc.Longitude,
+		}
+	}
+
+	return json.Marshal(hafasLoc)
+}
+
+// UnmarshalJSON unmarshals HAFAS@v6 JSON representation into Location
+func (loc *Location) UnmarshalJSON(data []byte) error {
+	var hLoc hafasLocation
+
+	if err := json.Unmarshal(data, &hLoc); err != nil {
+		return fmt.Errorf("failed to unmarshal location: %w", err)
+	}
+
+	*loc = Location{
+		Type:      hLoc.Type,
+		ID:        hLoc.ID,
+		Name:      hLoc.Name,
+		Address:   hLoc.Address,
+		Latitude:  hLoc.Latitude,
+		Longitude: hLoc.Longitude,
+	}
+
+	if hLoc.Location != nil {
+		loc.Latitude = hLoc.Location.Latitude
+		loc.Longitude = hLoc.Location.Longitude
+	}
+
+	return nil
+}
+
 // LocationType represents location type
 type LocationType uint8
 
@@ -57,6 +119,7 @@ func (c *Client) Locations(query string, locType LocationType, resultsNum int) (
 	q.Set("results", strconv.Itoa(resultsNum))
 	q.Set("query", query)
 	q.Set("pretty", "false")
+	q.Set("fuzzy", "false")
 
 	q.Set("stops", strconv.FormatBool(locType&LocationTypeStop != 0))
 	q.Set("addresss", strconv.FormatBool(locType&LocationTypeAddress != 0))
@@ -69,12 +132,12 @@ func (c *Client) Locations(query string, locType LocationType, resultsNum int) (
 
 	defer data.Close()
 
-	var res []Location
-	if err := json.NewDecoder(data).Decode(&res); err != nil {
+	var results []Location
+	if err := json.NewDecoder(data).Decode(&results); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return res, nil
+	return results, nil
 }
 
 // StopsNearby returns resultsNum stops within distance meters of walking from given location
@@ -85,19 +148,19 @@ func (c *Client) StopsNearby(lat, lng float64, distance, resultsNum int) ([]Loca
 	q.Set("longitude", strconv.FormatFloat(lng, 'f', -1, 64))
 	q.Set("pretty", "false")
 
-	data, err := c.sendRequest(http.MethodGet, "/stops/nearby?"+q.Encode())
+	data, err := c.sendRequest(http.MethodGet, "/locations/nearby?"+q.Encode())
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve stops nearby: %w", err)
 	}
 
 	defer data.Close()
 
-	var res []Location
-	if err := json.NewDecoder(data).Decode(&res); err != nil {
+	var results []Location
+	if err := json.NewDecoder(data).Decode(&results); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return res, nil
+	return results, nil
 }
 
 // TransportationType represents the type transport type
