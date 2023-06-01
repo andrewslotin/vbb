@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 )
@@ -200,46 +201,61 @@ type Departure struct {
 func (c *Client) Departures(stopID string, when time.Time, duration time.Duration, transportTypes TransportationType) ([]Departure, error) {
 	q := addTransportTypeParams(make(url.Values), transportTypes)
 
-	q.Set("when", when.Format(time.RFC3339))
+	q.Set("when", when.Format("2006-01-02T15:04:05-0700"))
 	q.Set("duration", strconv.FormatFloat(duration.Minutes(), 'f', 0, 64))
 	q.Set("pretty", "false")
 
-	data, err := c.sendRequest(http.MethodGet, "/stops/"+stopID+"/departures")
+	data, err := c.sendRequest(http.MethodGet, "/stops/"+stopID+"/departures?"+q.Encode())
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve departures for %s: %w", stopID, err)
 	}
 
 	defer data.Close()
 
-	var res []Departure
+	var res struct {
+		Departures []Departure
+	}
 	if err := json.NewDecoder(data).Decode(&res); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return res, nil
+	return res.Departures, nil
 }
 
 // Arrivals returns a list of arrivals for the stop at given time
 func (c *Client) Arrivals(stopID string, when time.Time, duration time.Duration, transportTypes TransportationType) ([]Departure, error) {
 	q := addTransportTypeParams(make(url.Values), transportTypes)
 
-	q.Set("when", when.Format(time.RFC3339))
+	q.Set("when", when.Format("2006-01-02T15:04:05-0700"))
 	q.Set("duration", strconv.FormatFloat(duration.Minutes(), 'f', 0, 64))
 	q.Set("pretty", "false")
 
-	data, err := c.sendRequest(http.MethodGet, "/stops/"+stopID+"/arrivals")
+	data, err := c.sendRequest(http.MethodGet, "/stops/"+stopID+"/arrivals?"+q.Encode())
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve arrivals for %s: %w", stopID, err)
 	}
 
 	defer data.Close()
 
-	var res []Departure
-	if err := json.NewDecoder(data).Decode(&res); err != nil {
+	var res struct {
+		Arrivals []struct {
+			Departure
+			Provenance string
+		}
+	}
+	if err := json.NewDecoder(io.TeeReader(data, os.Stderr)).Decode(&res); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return res, nil
+	var arrivals []Departure
+	for _, a := range res.Arrivals {
+		if a.Direction == "" {
+			a.Direction = a.Provenance // VBB puts the direction in the provenance field for arrivals
+		}
+		arrivals = append(arrivals, a.Departure)
+	}
+
+	return arrivals, nil
 }
 
 func addTransportTypeParams(q url.Values, transportTypes TransportationType) url.Values {
