@@ -1,3 +1,3 @@
-module github.com/andrewslotin/vbb
+module github.com/andrewslotin/vbb/v5
 
 go 1.19
