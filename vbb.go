@@ -74,7 +74,7 @@ func (loc Location) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	return json.Marshal(hafasLoc)
+	return json.Marshal(hLoc)
 }
 
 // UnmarshalJSON unmarshals HAFAS@v6 JSON representation into Location
