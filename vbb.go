@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"time"
 )
@@ -243,7 +242,7 @@ func (c *Client) Arrivals(stopID string, when time.Time, duration time.Duration,
 			Provenance string
 		}
 	}
-	if err := json.NewDecoder(io.TeeReader(data, os.Stderr)).Decode(&res); err != nil {
+	if err := json.NewDecoder(data).Decode(&res); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
