@@ -1,6 +1,6 @@
 # Go client for Berlin/Brandenburg transport API
 
-A Go client for the [VBB API](https://v5.vbb.transport.rest/api.html)
+A Go client for the [VBB API](https://v6.vbb.transport.rest/api.html)
 
 ## Usage
 
