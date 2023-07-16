@@ -202,7 +202,7 @@ func (c *Client) Departures(stopID string, when time.Time, duration time.Duratio
 	q := addTransportTypeParams(make(url.Values), transportTypes)
 
 	q.Set("when", when.Format("2006-01-02T15:04:05-0700"))
-	q.Set("duration", strconv.FormatFloat(duration.Minutes(), 'f', 0, 64))
+	q.Set("duration", strconv.Itoa(int(duration.Minutes())))
 	q.Set("pretty", "false")
 
 	data, err := c.sendRequest(http.MethodGet, "/stops/"+stopID+"/departures?"+q.Encode())
@@ -227,7 +227,7 @@ func (c *Client) Arrivals(stopID string, when time.Time, duration time.Duration,
 	q := addTransportTypeParams(make(url.Values), transportTypes)
 
 	q.Set("when", when.Format("2006-01-02T15:04:05-0700"))
-	q.Set("duration", strconv.FormatFloat(duration.Minutes(), 'f', 0, 64))
+	q.Set("duration", strconv.Itoa(int(duration.Minutes())))
 	q.Set("pretty", "false")
 
 	data, err := c.sendRequest(http.MethodGet, "/stops/"+stopID+"/arrivals?"+q.Encode())
