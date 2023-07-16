@@ -146,6 +146,7 @@ func (c *Client) StopsNearby(lat, lng float64, distance, resultsNum int) ([]Loca
 	q.Set("results", strconv.Itoa(resultsNum))
 	q.Set("latitude", strconv.FormatFloat(lat, 'f', -1, 64))
 	q.Set("longitude", strconv.FormatFloat(lng, 'f', -1, 64))
+	q.Set("distance", strconv.Itoa(distance))
 	q.Set("pretty", "false")
 
 	data, err := c.sendRequest(http.MethodGet, "/locations/nearby?"+q.Encode())
